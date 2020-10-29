@@ -1,0 +1,100 @@
+---
+title:  \vspace{-3.5cm} "Statistical Inference - ToothGrowth Data"
+author: "David Contreras Carretero"
+date: "29/10/2020"
+output: 
+  pdf_document:
+    fig_width: 6
+    fig_height: 3.5
+---
+\vspace{-1cm}  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE, warning=FALSE)
+```
+
+## Part 2: Basic Inferential Data Analysis Instructions
+Now in the second portion of the project, we're going to analyze the ToothGrowth data in the R datasets package.
+
+1. Load the ToothGrowth data and perform some basic exploratory data analyses
+2. Provide a basic summary of the data.
+3. Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. 
+4. State your conclusions and the assumptions needed for your conclusions.
+
+# 1. Load the ToothGrowth data and perform some basic exploratory data analyses
+```{r}
+#load datasets & packages
+library(datasets)
+library(ggplot2)
+library(dplyr)
+
+#load data
+data(ToothGrowth)
+
+TG <- ToothGrowth
+```
+```{r}
+dim(TG)
+```
+```{r}
+head(TG)
+```
+```{r}
+TG$dose <-factor(TG$dose)
+str(TG)
+```
+
+# 2. Provide a basic summary of the data.
+
+
+```{r echo= FALSE }
+MeanGrowth <- TG %>% group_by(dose) %>% summarise(MeanLen = mean(len), SDLen = sd(len))
+MeanGrowth
+```
+
+```{r echo=FALSE }
+MeanGrowth <- TG %>% group_by(supp, dose) %>% summarise(MeanLen = mean(len), SDLen = sd(len))
+MeanGrowth
+```
+
+
+```{r}
+plot <- ggplot(TG, 
+               aes(x=dose,y=len,fill=dose))
+plot + geom_boxplot(notch=F) + facet_grid(.~supp) +
+     scale_x_discrete("Dosage (mg)") +   
+     scale_y_continuous("Teeth Growth") 
+```
+
+# 3. Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. 
+
+```{r}
+TGLow <-rbind(TG[(TG$dose == 0.5)  & (TG$supp == "OJ"),], 
+              TG[(TG$dose == 1)  & (TG$supp == "OJ"),],
+              TG[(TG$dose == 0.5) &  (TG$supp == "VC"),],
+              TG[(TG$dose == 1)  & (TG$supp == "VC"),])
+testlow <- t.test(len ~ supp, data =TGLow,var.equal = FALSE)
+testlow$p.value;testlow$conf.int
+```
+
+```{r}
+TGHigh <-rbind(TG[(TG$dose == 2)  & (TG$supp == "OJ"),], 
+              TG[(TG$dose == 2)  & (TG$supp == "VC"),])
+testHigh <- t.test(len ~ supp, data =TGHigh,var.equal = FALSE)
+testHigh$p.value;testHigh$conf.int
+```
+
+
+# 4. State your conclusions and the assumptions needed for your conclusions.
+
+Basic exploratory data analysis show that we have 60 observations of three variables (len, supp, dose), that seems to record tooth growth (len) of subjects using two different suplements (supp), "OJ" and "VC", in three differents dosifications 0.5, 1 and 2 (assuming miligrams). We assume that the test has been performed in random unrelated subjects in each different group of supplement and dosage.  
+
+Summarizing data we observe that the subjects using supplement "OJ" had best results than users of "VC". With both supplements the growth increases as it does the dosage. At dosage of 2mg tooth growth seems to be similar with both supplements although we observe more variability in "VC" data.    
+
+Based on these summaries our null hipotesis would be that at lower dosage(0.5,1 mg) OJ works better than "VC", but at a dosage of 2mg their are equally valid. 
+
+At a confidence level of 95% confidence interval `r testlow$conf.int` doens't contain 0, so mean growth is constanly higher using "OJ" supplement. P-value `r testlow$p.value` is below 0.5 threshold. That confirms hypotesis of "OJ" working better than "VC" at lower dosage. 
+
+At a confidence level of 95% confidence interval `r testHigh$conf.int` contains 0, meaning that average tooth growth is similar using "OJ" or "VC" supplement. P-value `r testHigh$p.value` is close to 1. Hypotesis of "OJ" and "VC" having similar results at a dosage of 2mg tested valid.
+
+
+
